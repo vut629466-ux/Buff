@@ -1525,7 +1525,6 @@ local function refreshFruitList()
     
     local jobs = fetchJobs()
     if not jobs or #jobs == 0 then
-        if fruitLabel then fruitLabel:SetDesc("Kết quả: Không lấy được dữ liệu!") end -- Fix lỗi AddLabel
         pcall(function() Window:Notify({Title="Tay hub", Content="Không lấy được dữ liệu!", Image="rbxassetid://96454140798208", Duration=3}) end)
         isRefreshing = false
         return
@@ -1542,12 +1541,10 @@ local function refreshFruitList()
     end
     
     if #fruitServerList == 0 then
-        if fruitLabel then fruitLabel:SetDesc("Kết quả: Không tìm thấy server Fruit!") end -- Fix lỗi AddLabel
+        pcall(function() Window:Notify({Title="Tay hub", Content="Không tìm thấy server Fruit!", Image="rbxassetid://96454140798208", Duration=3}) end)
         isRefreshing = false
         return
     end
-    
-    if fruitLabel then fruitLabel:SetDesc("Tìm thấy " .. #fruitServerList .. " server Fruit") end -- Fix lỗi AddLabel
     
     local maxButtons = math.min(8, #fruitServerList)
     for i = 1, maxButtons do
@@ -1564,81 +1561,6 @@ local function refreshFruitList()
 end
 
 Tabs.Hop:AddButton({Name = "Làm mới danh sách", Callback = refreshFruitList})
-
--- SỬA LỖI TẠI ĐÂY: Sử dụng AddParagraph thay vì AddLabel
-fruitLabel = Tabs.Hop:AddParagraph("Kết quả", "Chưa có dữ liệu")
-
-Tabs.Hop:AddButton({
-    Name = "Reset Fruit (Xóa bộ nhớ visited)",
-    Callback = function()
-        local success = pcall(function() if _G then _G.VisitedFruitServers = {} end end)
-        pcall(function()
-            if success then Window:Notify({Title="Tay hub", Content="Đã xóa bộ nhớ visited!", Image="rbxassetid://96454140798208", Duration=2}) end
-        end)
-    end
-})
-
-createToggle("Fruit", "", "VisitedFruitServers", true)
-
-task.spawn(function()
-    task.wait(1)
-    refreshFruitList()
-end)
-
-
-local TimeZone = Tabs.Info:AddParagraph("Time Zone", "")
-
-function UpdateOS()
-    local date = os.date("*t")
-    local hour = (date.hour) % 24
-    local ampm = hour < 12 and "AM" or "PM"
-    local timezone = string.format("%02i:%02i:%02i %s", ((hour - 1) % 12) + 1, date.min, date.sec, ampm)
-    local datetime = string.format("%02d/%02d/%04d", date.day, date.month, date.year)    
-    
-    local LocalizationService = game:GetService("LocalizationService")
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-    local result, code    
-    
-    if not getgenv().countryRegionCode then
-        result, code = pcall(function()
-            return LocalizationService:GetCountryRegionForPlayerAsync(player)
-        end)
-        if result then
-            getgenv().countryRegionCode = code
-        else
-            getgenv().countryRegionCode = "Unknown"
-        end
-    else
-        code = getgenv().countryRegionCode
-    end
-    
-    TimeZone:SetDesc(datetime.." - "..timezone.." [ " .. code .. " ]")
-end
-
-spawn(function()
-    while true do
-        UpdateOS()
-        wait(1)
-    end
-end)
-
-local GameTime = Tabs.Info:AddParagraph("Game Time", "")
-
-function UpdateGameTime()
-    local GameTimeValue = math.floor(workspace.DistributedGameTime + 0.5)
-    local Hour = math.floor(GameTimeValue / (60^2)) % 24
-    local Minute = math.floor(GameTimeValue / (60^1)) % 60
-    local Second = math.floor(GameTimeValue / (60^0)) % 60
-    GameTime:SetDesc(Hour.." Hour (h) "..Minute.." Minute (m) "..Second.." Second (s)")
-end
-
-spawn(function()
-    while true do
-        UpdateGameTime()
-        wait(1)
-    end
-end)
 
 local MirageCheck = Tabs.Info:AddParagraph("Mirage Island", "Status: ")
 
