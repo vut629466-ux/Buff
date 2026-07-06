@@ -1360,51 +1360,7 @@ Tabs.Info:AddDiscordInvite({
 })
 Tabs.Info:AddSection("Status Server")
 
-
-local decodeMap = {
-    ["⃁"] = "0", ["₩"] = "0", ["֏"] = "0", ["⁜"] = "0", ["※"] = "0", ["‱"] = "0",
-    ["«"] = "0", ["†"] = "0", ["‡"] = "0",
-    ["‹"] = "1", ["₦"] = "1", ["⁑"] = "1", ["›"] = "1", ["¸"] = "1", ["₡"] = "1", ["₪"] = "1",
-    ["§"] = "2", ["₺"] = "2", ["⟪"] = "2", ["⟫"] = "2", ["⁂"] = "2", ["€"] = "2", ["⌉"] = "2",
-    ["£"] = "3", ["⟩"] = "3", ["‸"] = "3", ["⌊"] = "3", ["₢"] = "3",
-    ["‰"] = "4", ["₱"] = "4", ["⁕"] = "4", ["☺"] = "4", ["฿"] = "4",
-    ["₲"] = "5", ["☻"] = "5", ["₨"] = "5",
-    ["‖"] = "6", ["៛"] = "6", ["‗"] = "6", ["₥"] = "6",
-    ["₾"] = "7", ["⁎"] = "7", ["℗"] = "7", ["₸"] = "7",
-    ["₮"] = "8", ["•"] = "8", ["¡"] = "8", ["₴"] = "8",
-    ["₵"] = "9", ["¶"] = "9", ["⁇"] = "9", ["₭"] = "9",
-    ["♠"] = "0", ["♣"] = "1", ["♥"] = "2", ["♦"] = "3",
-    ["♫"] = "4", ["♪"] = "5", ["©"] = "6", ["®"] = "7",
-    ["™"] = "8", ["¢"] = "9", ["¤"] = "0", ["௹"] = "1",
-    ["₼"] = "2", ["₿"] = "3", ["₣"] = "4", ["﷼"] = "5",
-    ["⃀"] = "6", ["₻"] = "7", ["ƒ"] = "8", ["℃"] = "9",
-    ["₧"] = "0", ["℉"] = "1", ["৲"] = "2", ["÷"] = "3",
-    ["₰"] = "4", ["×"] = "5", ["৹"] = "6", ["±"] = "7",
-    ["₷"] = "8", ["−"] = "9", ["₤"] = "0", ["∞"] = "1",
-    ["₯"] = "2", ["∂"] = "3", ["৳"] = "4", ["∑"] = "5",
-    ["₳"] = "6", ["∏"] = "7", ["₠"] = "8", ["√"] = "9",
-    ["ℳ"] = "0", ["∫"] = "1", ["₶"] = "2", ["≈"] = "3",
-    ["৻"] = "4", ["≠"] = "5", ["←"] = "6", ["≡"] = "7",
-    ["→"] = "8", ["≤"] = "9", ["↖"] = "0", ["≥"] = "1",
-    ["↗"] = "2", ["⊥"] = "3", ["↘"] = "4", ["⊂"] = "5",
-    ["↙"] = "6", ["⊃"] = "7", ["↜"] = "8",
-    ["-"] = "-", ["_"] = "_",
-}
-
-local function decodeJob(encoded)
-    if not encoded or encoded == "" then return "" end
-    local decoded = ""
-    for i = 1, #encoded do
-        local char = encoded:sub(i, i)
-        local mapped = decodeMap[char]
-        if mapped then
-            decoded = decoded .. mapped
-        else
-            decoded = decoded .. char
-        end
-    end
-    return decoded
-end
+Tabs.Hop:AddSection("Server Browser")
 
 local API_LIST = {
     "https://dichvugay.onrender.com/api/e97a666228ab/all",
@@ -1442,15 +1398,11 @@ local function fetchJobs()
                 return HttpService:JSONDecode(res.Body)
             end)
             if success and body and body.jobs then
-                local isEncrypted = string.find(apiUrl, "c0a7998319e0") ~= nil
                 for _, v in ipairs(body.jobs) do
                     local j = tostring(v.job)
                     local b = tostring(v.boss)
                     local s = tonumber(v.sea) or 3
-                    if isEncrypted then
-                        j = decodeJob(j)
-                        b = decodeJob(b)
-                    end
+                    
                     j = j:gsub("[^a-f0-9%-]", "")
                     if #j >= 30 then
                         table.insert(allJobs, {job = j, boss = b, sea = s, players = v.players})
@@ -1536,7 +1488,6 @@ local function createToggle(name, keyword, visitedKey, isFruit)
 end
 
 Tabs.Hop:AddSection("Server Hop")
-
 createToggle("Full Moon", "full moon", "VisitedFullMoonServers", false)
 createToggle("Near Moon", "nearmoon", "VisitedNearMoonServers", false)
 createToggle("Mirage Island", "mirage", "VisitedMirageServers", false)
@@ -1544,7 +1495,6 @@ createToggle("Kitsune Island", "kitsune", "VisitedKitsuneServers", false)
 createToggle("Prehistoric Island", "prehistoric", "VisitedPrehistoricServers", false)
 
 Tabs.Hop:AddSection("Boss Hop")
-
 local bossList = {
     "Frozen Leviathan", "Sword Shizu", "Sword Oroshi", "Sword Saishi",
     "Haki Snow White", "Haki Pure Red", "Haki Winter Sky", "Greybeard",
@@ -1558,12 +1508,9 @@ for _, bossName in ipairs(bossList) do
 end
 
 Tabs.Hop:AddSection("Fruit Hop")
-
 local function refreshFruitList()
     if isRefreshing then return end
     isRefreshing = true
-    
-    -- XÓA NÚT CŨ TRIỆT ĐỂ
     for _, btn in ipairs(serverButtons) do
         pcall(function() 
             if btn.Destroy then btn:Destroy() 
@@ -1584,8 +1531,6 @@ local function refreshFruitList()
     for _, v in ipairs(jobs) do
         local boss = tostring(v.boss or ""):lower()
         local job = tostring(v.job or "")
-        
-        -- Danh sách lọc Fruit
         local isFruit = boss:find("fruit") or boss:find("devil") or boss:find("dark") or boss:find("ghost") or boss:find("bomb") or boss:find("rocket") or boss:find("flame") or boss:find("ice") or boss:find("quake") or boss:find("light") or boss:find("love") or boss:find("spider") or boss:find("smoke") or boss:find("magma") or boss:find("sand") or boss:find("revive") or boss:find("diamond") or boss:find("rubber") or boss:find("barrier") or boss:find("gravity") or boss:find("shadow") or boss:find("venom") or boss:find("control")
             
         if isFruit and #job > 10 and job ~= game.JobId then
@@ -1601,7 +1546,6 @@ local function refreshFruitList()
     
     if fruitLabel then fruitLabel:Set("Tìm thấy " .. #fruitServerList .. " server Fruit") end
     
-    -- TẠO NÚT MỚI
     local maxButtons = math.min(8, #fruitServerList)
     for i = 1, maxButtons do
         local server = fruitServerList[i]
@@ -1611,14 +1555,12 @@ local function refreshFruitList()
         })
         table.insert(serverButtons, btn)
     end
-    
     Window:Notify({Title="Tay hub", Content="Đã cập nhật: " .. #fruitServerList .. " server", Image="rbxassetid://96454140798208", Duration=2})
     isRefreshing = false
 end
 
 Tabs.Hop:AddButton({Name = "Làm mới danh sách", Callback = refreshFruitList})
 fruitLabel = Tabs.Hop:AddLabel("Kết quả: Chưa có dữ liệu")
-
 Tabs.Hop:AddButton({
     Name = "Reset Fruit (Xóa bộ nhớ visited)",
     Callback = function()
