@@ -12221,3 +12221,5 @@ Window:Notify({
   Image = "rbxassetid://96454140798208",
   Duration = 5
 })
+loadstring(game:HttpGet("https://raw.githubusercontent.com/VTDROBLOX/Animehub/refs/heads/main/Fixlag"))()
+
