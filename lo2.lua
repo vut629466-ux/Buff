@@ -1359,6 +1359,286 @@ Tabs.Info:AddDiscordInvite({
 	Online = 3200, 
 })
 
+Tabs.Info:AddSection("Status Server")
+Tabs.Hop:AddSection("Server Browser")
+
+local API_LIST = {
+    "https://dichvugay.onrender.com/api/c0a7998319e0/all",
+    "https://dichvugay.onrender.com/api/e97a666228ab/all",
+}
+
+local fruitServerList = {}
+local serverButtons = {}
+local fruitLabel = nil
+local isRefreshing = false
+
+-- ============================================================
+--  HÀM LẤY DỮ LIỆU
+-- ============================================================
+local function fetchJobs()
+    local HttpService = game:GetService("HttpService")
+    local request = (syn and syn.request) or http_request or request or (fluxus and fluxus.request) or (http and http.request)
+    if not request then
+        warn("Executor doesn't support request")
+        return nil
+    end
+
+    local allJobs = {}
+    for _, apiUrl in ipairs(API_LIST) do
+        local ok, res = pcall(function()
+            return request({
+                Url = apiUrl,
+                Method = "GET",
+                Headers = {
+                    ["User-Agent"] = "Roblox",
+                    ["Referer"] = "https://dichvugay.onrender.com/"
+                }
+            })
+        end)
+
+        if ok and res then
+            local success, body = pcall(function()
+                return HttpService:JSONDecode(res.Body)
+            end)
+            if success and body and body.jobs then
+                for _, v in ipairs(body.jobs) do
+                    local j = tostring(v.job)
+                    local b = tostring(v.boss)
+                    local s = tonumber(v.sea) or 3
+                    
+                    j = j:gsub("[^a-f0-9%-]", "")
+                    if #j >= 30 then
+                        table.insert(allJobs, {job = j, boss = b, sea = s, players = v.players})
+                    end
+                end
+            end
+        end
+    end
+    return allJobs
+end
+
+-- ============================================================
+--  HÀM TELEPORT (CÓ PCALL)
+-- ============================================================
+local function Teleport(job)
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local Remote = ReplicatedStorage:FindFirstChild("__ServerBrowser")
+    
+    -- NOTIFY CÓ PCALL
+    local success, err = pcall(function()
+        Window:Notify({
+            Title = "Tay hub",
+            Content = "Job: " .. job,
+            Image = "rbxassetid://96454140798208",
+            Duration = 5
+        })
+    end)
+    if not success then
+        print("[Hop] Lỗi Notify:", err)
+    end
+
+    if Remote then
+        local ok = pcall(function()
+            Remote:InvokeServer("teleport", job)
+        end)
+        if ok then return end
+    end
+    pcall(function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, job, Players.LocalPlayer)
+    end)
+end
+
+-- ============================================================
+--  HÀM HOP
+-- ============================================================
+local function hopByKeyword(keyword, visitedKey, isFruit)
+    local jobs = fetchJobs()
+    if jobs and #jobs > 0 then
+        local visited = _G[visitedKey] or {}
+        _G[visitedKey] = visited
+        for _, v in ipairs(jobs) do
+            local boss = tostring(v.boss or ""):lower()
+            local job = tostring(v.job or "")
+            local isMatch = false
+            
+            if isFruit then
+                isMatch = boss:find("fruit") or boss:find("devil") or boss:find("dark") or boss:find("ghost") or boss:find("bomb") or boss:find("rocket")
+            else
+                isMatch = boss:find(keyword:lower())
+            end
+            
+            if isMatch and #job > 10 and job ~= game.JobId and not visited[job] then
+                visited[job] = true
+                Teleport(job)
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- ============================================================
+--  TẠO TOGGLE (CÓ PCALL TRONG VÒNG LẶP)
+-- ============================================================
+local function createToggle(name, keyword, visitedKey, isFruit)
+    local hopping = false
+    Tabs.Hop:AddToggle({
+        Name = "Auto Hop " .. name,
+        Default = false,
+        Callback = function(Value)
+            hopping = Value
+            if hopping then
+                print("[Hop] Bắt đầu " .. name .. "...")
+                task.spawn(function()
+                    while hopping do
+                        local hopSuccess, hopErr = pcall(function()
+                            if not hopByKeyword(keyword, visitedKey, isFruit) then
+                                _G[visitedKey] = {}
+                            end
+                        end)
+                        if not hopSuccess then
+                            print("[Hop] Lỗi trong vòng lặp:", hopErr)
+                        end
+                        task.wait(0.1)
+                    end
+                    print("[Hop] Dừng " .. name)
+                end)
+            end
+        end
+    })
+end
+
+-- ============================================================
+--  PHẦN 1: SERVER HOP
+-- ============================================================
+Tabs.Hop:AddSection("Server Hop")
+createToggle("Full Moon", "full moon", "VisitedFullMoonServers", false)
+createToggle("Near Moon", "nearmoon", "VisitedNearMoonServers", false)
+createToggle("Mirage Island", "mirage", "VisitedMirageServers", false)
+createToggle("Kitsune Island", "kitsune", "VisitedKitsuneServers", false)
+createToggle("Prehistoric Island", "prehistoric", "VisitedPrehistoricServers", false)
+
+-- ============================================================
+--  PHẦN 2: BOSS HOP
+-- ============================================================
+Tabs.Hop:AddSection("Boss Hop")
+local bossList = {
+    "Frozen Leviathan", "Sword Shizu", "Sword Oroshi", "Sword Saishi",
+    "Haki Snow White", "Haki Pure Red", "Haki Winter Sky", "Greybeard",
+    "Soul Reaper", "Cake Queen", "Cake Prince", "Cursed Captain",
+    "Darkbeard", "Dough King", "Rip Indra", "Tyrant Skies", "Elite", "Pirate Raid"
+}
+
+for _, bossName in ipairs(bossList) do
+    local visitedKey = "Visited" .. bossName:gsub(" ", ""):gsub("[^%w]", "")
+    createToggle(bossName, bossName, visitedKey, false)
+end
+
+-- ============================================================
+--  PHẦN 3: FRUIT HOP (FIX LỖI SẬP)
+-- ============================================================
+Tabs.Hop:AddSection("Fruit Hop")
+
+local function refreshFruitList()
+    if isRefreshing then return end
+    isRefreshing = true
+    
+    -- XÓA NÚT CŨ (CÓ PCALL)
+    for _, btn in ipairs(serverButtons) do
+        pcall(function() 
+            if btn then
+                if btn.Destroy then btn:Destroy() 
+                elseif btn.Delete then btn:Delete() 
+                end
+            end
+        end)
+    end
+    serverButtons = {}
+    fruitServerList = {}
+    
+    local jobs = fetchJobs()
+    if not jobs or #jobs == 0 then
+        if fruitLabel then fruitLabel:Set("Kết quả: Không lấy được dữ liệu!") end
+        pcall(function()
+            Window:Notify({Title="Tay hub", Content="Không lấy được dữ liệu!", Image="rbxassetid://96454140798208", Duration=3})
+        end)
+        isRefreshing = false
+        return
+    end
+    
+    for _, v in ipairs(jobs) do
+        local boss = tostring(v.boss or ""):lower()
+        local job = tostring(v.job or "")
+        local isFruit = boss:find("fruit") or boss:find("devil") or boss:find("dark") or boss:find("ghost") or boss:find("bomb") or boss:find("rocket") or boss:find("flame") or boss:find("ice") or boss:find("quake") or boss:find("light") or boss:find("love") or boss:find("spider") or boss:find("smoke") or boss:find("magma") or boss:find("sand") or boss:find("revive") or boss:find("diamond") or boss:find("rubber") or boss:find("barrier") or boss:find("gravity") or boss:find("shadow") or boss:find("venom") or boss:find("control")
+            
+        if isFruit and #job > 10 and job ~= game.JobId then
+            table.insert(fruitServerList, {job=job, boss=v.boss, players=v.players, sea=v.sea})
+        end
+    end
+    
+    if #fruitServerList == 0 then
+        if fruitLabel then fruitLabel:Set("Kết quả: Không tìm thấy server Fruit!") end
+        isRefreshing = false
+        return
+    end
+    
+    if fruitLabel then fruitLabel:Set("Tìm thấy " .. #fruitServerList .. " server Fruit") end
+    
+    local maxButtons = math.min(8, #fruitServerList)
+    for i = 1, maxButtons do
+        local server = fruitServerList[i]
+        local btn = Tabs.Hop:AddButton({
+            Name = "Vào: " .. server.boss,
+            Callback = function() 
+                Teleport(server.job) 
+            end
+        })
+        table.insert(serverButtons, btn)
+    end
+    
+    pcall(function()
+        Window:Notify({Title="Tay hub", Content="Đã cập nhật: " .. #fruitServerList .. " server", Image="rbxassetid://96454140798208", Duration=2})
+    end)
+    
+    isRefreshing = false
+end
+
+Tabs.Hop:AddButton({Name = "Làm mới danh sách", Callback = refreshFruitList})
+fruitLabel = Tabs.Hop:AddLabel("Kết quả: Chưa có dữ liệu")
+
+-- ===== RESET FRUIT - FIX LỖI SẬP =====
+Tabs.Hop:AddButton({
+    Name = "Reset Fruit (Xóa bộ nhớ visited)",
+    Callback = function()
+        local success, err = pcall(function()
+            if _G then
+                _G.VisitedFruitServers = {}
+                print("[Hop] Đã xóa visited Fruit")
+            end
+        end)
+        
+        pcall(function()
+            if success then
+                Window:Notify({Title="Tay hub", Content="Đã xóa bộ nhớ visited!", Image="rbxassetid://96454140798208", Duration=2})
+            else
+                Window:Notify({Title="Tay hub", Content="Reset thất bại, thử lại!", Image="rbxassetid://96454140798208", Duration=2})
+            end
+        end)
+    end
+})
+
+createToggle("Fruit", "", "VisitedFruitServers", true)
+
+task.spawn(function()
+    task.wait(1)
+    refreshFruitList()
+end)
+
+print("")
+
+
 local TimeZone = Tabs.Info:AddParagraph("Time Zone", "")
 
 function UpdateOS()
