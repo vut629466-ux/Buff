@@ -597,7 +597,7 @@ sea3 = (game.PlaceId == 7449423635 or game.PlaceId == 100117331123089)
 
 local Settings = {
     ["Tween Speed"] = 100,
-    ["Bypass Teleport"] = true,
+    ["Bypass Teleport"] = false,
     ["Up Y"] = false,
     ["Up Y When Low Health"] = false,
     ["Same Y"] = false
@@ -4035,7 +4035,7 @@ end})
 BypassTPToggle = Tabs.Settings:AddToggle({
     Name = "Bypass Teleport", 
     Description = "", 
-    Default = true, 
+    Default = false, 
     Callback = function(Value)
         Settings["Bypass Teleport"] = Value 
     end
